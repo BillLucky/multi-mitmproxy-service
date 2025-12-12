@@ -1,5 +1,10 @@
 # mitmproxy-service
 
+[![Docker Hub](https://img.shields.io/docker/pulls/luckybill/multi-mitmproxy-service.svg)](https://hub.docker.com/r/luckybill/multi-mitmproxy-service)
+[![Image](https://img.shields.io/badge/Docker-image-blue)](https://hub.docker.com/r/luckybill/multi-mitmproxy-service/tags)
+[![CI](https://github.com/BillLucky/multi-mitmproxy-service/actions/workflows/docker.yml/badge.svg)](https://github.com/BillLucky/multi-mitmproxy-service/actions/workflows/docker.yml)
+[![Repo](https://img.shields.io/badge/GitHub-BillLucky%2Fmulti--mitmproxy--service-black)](https://github.com/BillLucky/multi-mitmproxy-service)
+
 一个可配置的多端口反向代理套件，基于 mitmproxy/mitmweb，支持：
 - 通过 `proxies.json` 一次性定义多个反向代理目标
 - 自动生成并启动对应容器，端口与日志独立
@@ -29,6 +34,10 @@ docker run -p 8080:48080 -p 8081:48081 \
   luckybill/multi-mitmproxy-service:latest
 ```
 
+### 快速指向
+- Docker Hub：`https://hub.docker.com/r/luckybill/multi-mitmproxy-service`
+- GitHub Repo：`https://github.com/BillLucky/multi-mitmproxy-service`
+
 访问：
 - 代理端口：见 `proxies.json` 的 `host_proxy_port`
 - Web UI：见 `proxies.json` 的 `host_web_port`
@@ -45,7 +54,7 @@ docker run -p 8080:48080 -p 8081:48081 \
       "host_proxy_port": 48084,
       "host_web_port": 48085,
       "web_password": "$argon2id$v=19$m=4096,t=3,p=1$UJkTjY9A73NJo7QdAeSJhQ$iqqkhTvomJhA/IO33n4P/a9BLS548QaxTj4mTbBEshE",
-      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:ro"],
+      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:rw"],
       "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt" }
     },
     {
@@ -83,6 +92,18 @@ make up
 - `.env` 文件不再参与服务端口配置（可用于你自定义环境，不影响生成器输出）
 - 容器命名规则：`mitmproxy-reverse-to-<host_proxy_port>-web-<host_web_port>`
 - Web UI 端口：`<host_web_port>`；代理端口：`<host_proxy_port>`
+
+## 场景故事：为 AI/后端开发者打造的“端口观察哨”
+- 问题：当你在本机调试 Ollama 的 `11434` 端口，或调用任意后端 API，常常需要同时“看见”请求与响应，以便迭代提示词、参数与返回内容。传统做法要么在代码埋日志，要么开抓包工具，既费力又不易分享上下文。
+- 方案：用本项目为目标端口启动一个反向代理容器。代理端口对外提供稳定入口、Web UI 可视化流量，日志与 CA/配置可挂载到宿主机持久化。
+- 收益：
+  - 一键为多个端口生成“观测点”，代理复用容器内固定端口（48080/48081），宿主机端口自定义；
+  - `mitmweb` 提供请求/响应体、Header、时间线等信息，帮助你快速洞察哪一步造成延迟或错误；
+  - 挂载 `SSLKEYLOGFILE` 可配合 Wireshark 解密 TLS，定位更隐蔽的问题；
+  - 文档与 Makefile 统一操作，团队共享镜像即可复用，无需每人手动构建。
+- 示例：为 Ollama `11434` 启服务，宿主代理端口设为 `48084`，Web 端口 `48085`：
+  - `proxies.json` 设置 `target=http://host.docker.internal:11434`，`host_proxy_port=48084`，`host_web_port=48085`
+  - `make up` 后访问 `http://localhost:48084/` 与 `http://localhost:48085/?token=<密码>`，即可观察请求与响应
 
 ## Web UI 密码
 - 明文：`"web_password": "yourpass"`

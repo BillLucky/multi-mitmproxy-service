@@ -15,8 +15,14 @@ make logs        # 跟随日志
 make down        # 停止并删除
 
 # 使用发布镜像而非本地构建
-export IMAGE_REPO=luckybill/multi-mitmproxy-service
+export IMAGE_REPO=billlucky/multi-mitmproxy-service
 make up
+
+# 直接运行单容器
+docker run -p 8080:48080 -p 8081:48081 \
+  -e MITM_REVERSE_TARGET=http://host.docker.internal:11434 \
+  -e MITM_WEB_PASSWORD=5555.5555 \
+  luckybill/multi-mitmproxy-service:latest
 ```
 
 ## 三、访问方式
@@ -41,6 +47,10 @@ make up
 - 容器命名：`mitmproxy-reverse-<host_proxy_port>`
 - 容器命名：`mitmproxy-reverse-to-<host_proxy_port>-web-<host_web_port>`
 - 健康检查：对 Web 端口发起 HTTP 请求，403/405 不视为失败（表示 UI 需要认证，但服务可达）
+
+## 链接与指引
+- Docker Hub：`https://hub.docker.com/r/luckybill/multi-mitmproxy-service`
+- GitHub Repo：`https://github.com/BillLucky/multi-mitmproxy-service`
 
 ## 五、构建与缓存
 - 构建使用 BuildKit 特性缓存 pip 包
