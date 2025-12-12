@@ -54,7 +54,7 @@ dockerhub-push:
 	docker push $(DOCKER_REPO):$(VERSION)
 
 # 推送镜像到 Docker Hub 
-# make dockerhub-build DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=v1.0.3
-# make dockerhub-push DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=v1.0.3
+# make dockerhub-build DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=v1.0.4
+# make dockerhub-push DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=v1.0.4
 
-# git tag v1.0.3 && git push origin v1.0.3
+# git tag v1.0.4 && git push origin v1.0.4
