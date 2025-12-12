@@ -1,0 +1,23 @@
+{
+  "proxies": [
+    {
+      "name": "11434",
+      "target": "http://host.docker.internal:11434",
+      "host_proxy_port": 48084,
+      "host_web_port": 48085,
+      "web_password": "$argon2id$v=19$m=4096,t=3,p=1$UJkTjY9A73NJo7QdAeSJhQ$iqqkhTvomJhA/IO33n4P/a9BLS548QaxTj4mTbBEshE",
+      "volumes": [
+        "./mitmproxy-conf:/root/.mitmproxy:ro"
+      ],
+      "env": {
+        "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt"
+      }
+    },
+    {
+      "name": "11435",
+      "target": "http://host.docker.internal:11435",
+      "host_proxy_port": 48082,
+      "host_web_port": 48083
+    }
+  ]
+}

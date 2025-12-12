@@ -1,0 +1,19 @@
+# project
+docker-compose.generated.yml
+mitmproxy-logs/
+mitmproxy-conf/
+.DS_Store
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# env
+.env
+
+# editor
+.idea/
+.vscode/

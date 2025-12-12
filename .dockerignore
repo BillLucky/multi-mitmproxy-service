@@ -1,0 +1,6 @@
+# 忽略无关文件，加快构建速度
+.git
+.gitignore
+*.md
+*.log
+mitmproxy-logs/

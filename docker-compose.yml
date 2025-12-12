@@ -1,0 +1,16 @@
+x-base: &base
+  build: .
+  restart: always
+  init: true
+  logging:
+    driver: "local"
+    options:
+      max-size: "100m"
+      max-file: "3"
+  healthcheck:
+    test: ["CMD", "python3", "-c", "import os,urllib.request; port=os.environ['MITM_WEB_PORT']; urllib.request.urlopen(f'http://127.0.0.1:{port}/', timeout=2)"]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+    start_period: 10s
+services: {}
