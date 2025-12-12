@@ -29,8 +29,8 @@ def gen_service_block(p):
     hwp = int(p["host_web_port"])
     web_password = p.get("web_password", "")
 
-    flow_log = f"/app/logs/log_{hpp}.flow"
-    web_log = f"/app/logs/mitmweb_{hpp}.log"
+    flow_log = p.get("flow_log", f"/app/logs/log_{hpp}.flow")
+    web_log = p.get("web_log", f"/app/logs/mitmweb_{hpp}.log")
     vol_path = f"./mitmproxy-logs/{hpp}:/app/logs"
     container_name = f"mitmproxy-reverse-to-{hpp}-web-{hwp}"
 

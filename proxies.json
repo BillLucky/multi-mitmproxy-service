@@ -10,15 +10,9 @@
         "./mitmproxy-conf:/root/.mitmproxy:rw"
       ],
       "env": {
-        "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt"
+        "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt",
+        "STREAM_TO_STDOUT": "1"
       }
-    },
-    {
-      "name": "11434-2",
-      "target": "http://host.docker.internal:11434",
-      "host_proxy_port": 49080,
-      "host_web_port": 49081,
-      "web_password": "$argon2id$v=19$m=4096,t=3,p=1$NfdPti75CkDT5/gaaj3vbg$U9Mx9IT+Xl+3XwzhGuW2eUF6zkgLm2f5IwW/8b8RD5Y"
     }
   ]
 }

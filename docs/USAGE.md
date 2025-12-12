@@ -28,10 +28,26 @@ docker run -p 8080:48080 -p 8081:48081 \
 cat > proxies.json <<'JSON'
 {
   "proxies": [
-    { "name": "ollama", "target": "http://host.docker.internal:11434", "host_proxy_port": 48084, "host_web_port": 48085 },
-    { "name": "apiA",   "target": "http://host.docker.internal:9000",   "host_proxy_port": 49080, "host_web_port": 49081,
-      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt" },
-      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:rw"] }
+    {
+      "name": "ollama",
+      "target": "http://host.docker.internal:11434",
+      "host_proxy_port": 48084,
+      "host_web_port": 48085,
+      "flow_log": "/app/logs/flows/ollama.flow",
+      "web_log": "/app/logs/web/ollama.log",
+      "env": { "STREAM_TO_STDOUT": "1" },
+      "volumes": ["./captures:/app/logs:rw", "./mitmproxy-conf:/root/.mitmproxy:rw"]
+    },
+    {
+      "name": "apiA",
+      "target": "http://host.docker.internal:9000",
+      "host_proxy_port": 49080,
+      "host_web_port": 49081,
+      "flow_log": "/app/logs/flows/apiA.flow",
+      "web_log": "/app/logs/web/apiA.log",
+      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt", "STREAM_TO_STDOUT": "1" },
+      "volumes": ["./captures:/app/logs:rw", "./mitmproxy-conf:/root/.mitmproxy:rw"]
+    }
   ]
 }
 JSON
@@ -66,6 +82,16 @@ open http://localhost:49081/?token=<password>
 ## 链接与指引
 - Docker Hub：`https://hub.docker.com/r/luckybill/multi-mitmproxy-service`
 - GitHub Repo：`https://github.com/BillLucky/multi-mitmproxy-service`
+
+## 日志捕获与查看
+- 每个服务默认写入：`/app/logs/log_<proxy>.flow`（HTTP flows）与 `/app/logs/mitmweb_<proxy>.log`（mitmweb 输出）
+- 可通过 `flow_log`/`web_log` 自定义路径，并统一挂载到宿主 `./captures:/app/logs:rw`
+- 标准输出：在 `env` 中设置 `"STREAM_TO_STDOUT": "1"`，容器会把 `web_log` 与 `flow_log` 同步打印到 stdout
+- 查看命令：
+```bash
+make logs                      # 跟随所有容器日志（stdout）
+tail -f captures/web/ollama.log captures/flows/ollama.flow
+```
 
 ## Bilingual Overview（English）
 - Quick Start:

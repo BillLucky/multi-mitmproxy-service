@@ -83,10 +83,32 @@ make up
 ```json
 {
   "proxies": [
-    { "name": "ollama", "target": "http://host.docker.internal:11434", "host_proxy_port": 48084, "host_web_port": 48085 },
-    { "name": "apiA",   "target": "http://host.docker.internal:9000",   "host_proxy_port": 49080, "host_web_port": 49081,
-      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt" },
-      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:rw"] }
+    {
+      "name": "ollama",
+      "target": "http://host.docker.internal:11434",
+      "host_proxy_port": 48084,
+      "host_web_port": 48085,
+      "flow_log": "/app/logs/flows/ollama.flow",
+      "web_log": "/app/logs/web/ollama.log",
+      "env": { "STREAM_TO_STDOUT": "1" },
+      "volumes": [
+        "./captures:/app/logs:rw",
+        "./mitmproxy-conf:/root/.mitmproxy:rw"
+      ]
+    },
+    {
+      "name": "apiA",
+      "target": "http://host.docker.internal:9000",
+      "host_proxy_port": 49080,
+      "host_web_port": 49081,
+      "flow_log": "/app/logs/flows/apiA.flow",
+      "web_log": "/app/logs/web/apiA.log",
+      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt", "STREAM_TO_STDOUT": "1" },
+      "volumes": [
+        "./captures:/app/logs:rw",
+        "./mitmproxy-conf:/root/.mitmproxy:rw"
+      ]
+    }
   ]
 }
 ```
@@ -95,6 +117,11 @@ make up
 open http://localhost:48085/?token=<password>
 open http://localhost:49081/?token=<password>
 ```
+
+> 说明
+- `flow_log`/`web_log`：按服务自定义日志文件路径（默认分别为 `/app/logs/log_<proxy>.flow` 与 `/app/logs/mitmweb_<proxy>.log`）
+- `STREAM_TO_STDOUT=1`：同时将 `web_log` 与 `flow_log` 流式输出到容器标准输出，配合 `docker compose logs -f` 观察
+- `./captures:/app/logs:rw`：统一挂载日志根目录到宿主机，保存所有服务的捕获内容
 
 ## 设计说明
 - 生成器：`tools/gen_compose.py` 读取 `proxies.json`，生成 `docker-compose.generated.yml`
@@ -186,6 +213,7 @@ make dockerhub-push  DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=1.0.0
 - 日志目录：每个服务自动挂载 `./mitmproxy-logs/<proxy_port>:/app/logs`，滚动策略为 `100m * 3`。
 - 挂载单个文件：可在 `volumes` 中写入 `"./path/to/file:/container/path:ro"`；适合注入脚本或额外资源。
 - 环境变量扩展：通过 `env` 字段注入，例如启用 `SSLKEYLOGFILE` 或调整 `PIP_INDEX_URL`、`HTTP_PROXY` 等。
+- 标准输出日志：设置 `STREAM_TO_STDOUT=1` 后，容器会把 `web_log` 与 `flow_log` 同步到 stdout；查看 `make logs` 或 `docker compose logs -f`
 
 ## CI/CD（GitHub Actions）
 - 已提供工作流：`.github/workflows/docker.yml`

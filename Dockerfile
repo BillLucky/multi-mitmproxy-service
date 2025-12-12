@@ -26,12 +26,24 @@ RUN mkdir -p /app/logs && chmod 777 /app/logs
 ENV MITM_REVERSE_TARGET="http://127.0.0.1:11434" \
     MITM_PROXY_PORT=48080 \
     MITM_WEB_PORT=48081 \
-    MITM_FLOW_LOG="/app/logs/log_48080.flow"
+    MITM_FLOW_LOG="/app/logs/log_48080.flow" \
+    MITM_WEB_LOG="/app/logs/mitmweb_48080.log" \
+    STREAM_TO_STDOUT=0
 
 RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} --web-port ${MITM_WEB_PORT} -w ${MITM_FLOW_LOG} --set web_host=0.0.0.0 --set listen_host=0.0.0.0 --set block_global=false --quiet"' >> /app/start.sh && \
-    echo 'if [ -n "${MITM_WEB_PASSWORD}" ]; then ARGS="$ARGS --set web_password=${MITM_WEB_PASSWORD}"; fi' >> /app/start.sh && \
-    echo 'exec mitmweb $ARGS' >> /app/start.sh && \
+    echo 'set -eu' >> /app/start.sh && \
+    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} --web-port ${MITM_WEB_PORT} -w ${MITM_FLOW_LOG} --set web_host=0.0.0.0 --set listen_host=0.0.0.0 --set block_global=false"' >> /app/start.sh && \
+    echo 'if [ -n "${MITM_WEB_PASSWORD:-}" ]; then ARGS="$ARGS --set web_password=${MITM_WEB_PASSWORD}"; fi' >> /app/start.sh && \
+    echo 'mkdir -p "$(dirname "${MITM_FLOW_LOG}")" "$(dirname "${MITM_WEB_LOG}")"' >> /app/start.sh && \
+    echo 'touch "${MITM_FLOW_LOG}" "${MITM_WEB_LOG}"' >> /app/start.sh && \
+    echo 'if [ "${STREAM_TO_STDOUT:-0}" = "1" ]; then' >> /app/start.sh && \
+    echo '  mitmweb $ARGS >> "${MITM_WEB_LOG}" 2>&1 & MWPID=$!' >> /app/start.sh && \
+    echo '  tail -F "${MITM_WEB_LOG}" "${MITM_FLOW_LOG}" & TAILPID=$!' >> /app/start.sh && \
+    echo '  trap "kill $MWPID $TAILPID 2>/dev/null || true" TERM INT' >> /app/start.sh && \
+    echo '  wait $MWPID' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '  exec sh -lc "mitmweb $ARGS >> \\"${MITM_WEB_LOG}\\" 2>&1"' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # 暴露端口（代理端口 + Web界面端口）
