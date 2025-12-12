@@ -87,6 +87,7 @@ open http://localhost:49081/?token=<password>
 - 每个服务默认写入：`/app/logs/log_<proxy>.flow`（HTTP flows）与 `/app/logs/mitmweb_<proxy>.log`（mitmweb 输出）
 - 可通过 `flow_log`/`web_log` 自定义路径，并统一挂载到宿主 `./captures:/app/logs:rw`
 - 标准输出：在 `env` 中设置 `"STREAM_TO_STDOUT": "1"`，容器会把 `web_log` 与 `flow_log` 同步打印到 stdout
+- 日志滚动：默认每次启动为日志文件添加时间戳后缀，避免覆盖历史；如需使用固定文件名，设置 `ROLL_ON_START=0`
 - 查看命令：
 ```bash
 make logs                      # 跟随所有容器日志（stdout）

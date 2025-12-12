@@ -32,17 +32,22 @@ ENV MITM_REVERSE_TARGET="http://127.0.0.1:11434" \
 
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'set -eu' >> /app/start.sh && \
-    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} --web-port ${MITM_WEB_PORT} -w ${MITM_FLOW_LOG} --set web_host=0.0.0.0 --set listen_host=0.0.0.0 --set block_global=false"' >> /app/start.sh && \
-    echo 'if [ -n "${MITM_WEB_PASSWORD:-}" ]; then ARGS="$ARGS --set web_password=${MITM_WEB_PASSWORD}"; fi' >> /app/start.sh && \
+    echo 'ts=$(date -u +%Y%m%d-%H%M%S)' >> /app/start.sh && \
     echo 'mkdir -p "$(dirname "${MITM_FLOW_LOG}")" "$(dirname "${MITM_WEB_LOG}")"' >> /app/start.sh && \
-    echo 'touch "${MITM_FLOW_LOG}" "${MITM_WEB_LOG}"' >> /app/start.sh && \
+    echo 'flow_base="${MITM_FLOW_LOG%.*}"; flow_ext="${MITM_FLOW_LOG##*.}"' >> /app/start.sh && \
+    echo 'web_base="${MITM_WEB_LOG%.*}"; web_ext="${MITM_WEB_LOG##*.}"' >> /app/start.sh && \
+    echo 'FLOW_FILE="${flow_base}.${ts}.${flow_ext}"' >> /app/start.sh && \
+    echo 'WEB_FILE="${web_base}.${ts}.${web_ext}"' >> /app/start.sh && \
+    echo 'if [ "${ROLL_ON_START:-1}" = "0" ]; then FLOW_FILE="${MITM_FLOW_LOG}"; WEB_FILE="${MITM_WEB_LOG}"; fi' >> /app/start.sh && \
+    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} --web-port ${MITM_WEB_PORT} -w ${FLOW_FILE} --set web_host=0.0.0.0 --set listen_host=0.0.0.0 --set block_global=false"' >> /app/start.sh && \
+    echo 'if [ -n "${MITM_WEB_PASSWORD:-}" ]; then ARGS="$ARGS --set web_password=${MITM_WEB_PASSWORD}"; fi' >> /app/start.sh && \
     echo 'if [ "${STREAM_TO_STDOUT:-0}" = "1" ]; then' >> /app/start.sh && \
-    echo '  mitmweb $ARGS >> "${MITM_WEB_LOG}" 2>&1 & MWPID=$!' >> /app/start.sh && \
-    echo '  tail -F "${MITM_WEB_LOG}" "${MITM_FLOW_LOG}" & TAILPID=$!' >> /app/start.sh && \
+    echo '  mitmweb $ARGS >> "${WEB_FILE}" 2>&1 & MWPID=$!' >> /app/start.sh && \
+    echo '  tail -F "${WEB_FILE}" "${FLOW_FILE}" & TAILPID=$!' >> /app/start.sh && \
     echo '  trap "kill $MWPID $TAILPID 2>/dev/null || true" TERM INT' >> /app/start.sh && \
     echo '  wait $MWPID' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
-    echo '  exec sh -lc "mitmweb $ARGS >> \\"${MITM_WEB_LOG}\\" 2>&1"' >> /app/start.sh && \
+    echo '  exec sh -lc "mitmweb $ARGS >> \\"${WEB_FILE}\\" 2>&1"' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     chmod +x /app/start.sh
 

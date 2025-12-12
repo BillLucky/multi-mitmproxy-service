@@ -214,6 +214,7 @@ make dockerhub-push  DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=1.0.0
 - 挂载单个文件：可在 `volumes` 中写入 `"./path/to/file:/container/path:ro"`；适合注入脚本或额外资源。
 - 环境变量扩展：通过 `env` 字段注入，例如启用 `SSLKEYLOGFILE` 或调整 `PIP_INDEX_URL`、`HTTP_PROXY` 等。
 - 标准输出日志：设置 `STREAM_TO_STDOUT=1` 后，容器会把 `web_log` 与 `flow_log` 同步到 stdout；查看 `make logs` 或 `docker compose logs -f`
+- 日志滚动：默认每次启动为日志文件添加时间戳后缀，避免覆盖历史（可通过 `ROLL_ON_START=0` 禁用，使用固定文件名）
 
 ## CI/CD（GitHub Actions）
 - 已提供工作流：`.github/workflows/docker.yml`
