@@ -50,6 +50,14 @@ def gen_service_block(p):
     if isinstance(extra_env, dict):
         for k, v in extra_env.items():
             env_lines.append(f"      - {k}={v}")
+    # defaults injection if not present
+    present_keys = {line.split('=')[0].split()[-1] for line in env_lines if '=' in line}
+    if "STREAM_LARGE_BODIES" not in present_keys:
+        env_lines.append("      - STREAM_LARGE_BODIES=1m")
+    if "ROLL_ON_START" not in present_keys:
+        env_lines.append("      - ROLL_ON_START=1")
+    if "MITM_UI_ENABLED" not in present_keys:
+        env_lines.append("      - MITM_UI_ENABLED=1")
 
     block = []
     block.append(f"  mitmproxy-{name}:")
@@ -78,16 +86,26 @@ def gen_service_block(p):
     block.append(f"        max-size: \"100m\"")
     block.append(f"        max-file: \"3\"")
     block.append(f"    healthcheck:")
-    block.append(
-        "      test: [\"CMD\", \"python3\", \"-c\", "
-        "\"import sys,urllib.request,urllib.error; "
-        "import socket; "
-        "import time; "
-        "url='http://127.0.0.1:48081/'; "
-        "try:\\n  urllib.request.urlopen(url, timeout=2); sys.exit(0)\\n"
-        "except urllib.error.HTTPError:\\n  sys.exit(0)\\n"
-        "except Exception:\\n  sys.exit(1)\" ]"
-    )
+    ui_disabled = str(extra_env.get("MITM_UI_ENABLED", "1")) == "0"
+    if ui_disabled:
+        block.append(
+            "      test: [\"CMD\", \"python3\", \"-c\", "
+            "\"import socket,sys; "
+            "s=socket.socket(); "
+            "s.settimeout(2); "
+            "import os; p=os.environ.get('MITM_PROXY_PORT','48080'); "
+            "s.connect(('127.0.0.1', int(p))); s.close(); sys.exit(0)\" ]"
+        )
+    else:
+        block.append(
+            "      test: [\"CMD\", \"python3\", \"-c\", "
+            "\"import sys,urllib.request,urllib.error,os; "
+            "port=os.environ.get('MITM_WEB_PORT','48081'); "
+            "url=f'http://127.0.0.1:{port}/'; "
+            "try:\\n  urllib.request.urlopen(url, timeout=2); sys.exit(0)\\n"
+            "except urllib.error.HTTPError:\\n  sys.exit(0)\\n"
+            "except Exception:\\n  sys.exit(1)\" ]"
+        )
     block.append(f"      interval: 10s")
     block.append(f"      timeout: 3s")
     block.append(f"      retries: 5")

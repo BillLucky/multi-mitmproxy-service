@@ -39,15 +39,21 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'FLOW_FILE="${flow_base}.${ts}.${flow_ext}"' >> /app/start.sh && \
     echo 'WEB_FILE="${web_base}.${ts}.${web_ext}"' >> /app/start.sh && \
     echo 'if [ "${ROLL_ON_START:-1}" = "0" ]; then FLOW_FILE="${MITM_FLOW_LOG}"; WEB_FILE="${MITM_WEB_LOG}"; fi' >> /app/start.sh && \
-    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} --web-port ${MITM_WEB_PORT} -w ${FLOW_FILE} --set web_host=0.0.0.0 --set listen_host=0.0.0.0 --set block_global=false"' >> /app/start.sh && \
+    echo 'CMD="mitmweb"; [ "${MITM_UI_ENABLED:-1}" = "0" ] && CMD="mitmdump"' >> /app/start.sh && \
+    echo 'ARGS="--mode reverse:${MITM_REVERSE_TARGET} -p ${MITM_PROXY_PORT} -w ${FLOW_FILE} --set listen_host=0.0.0.0 --set block_global=false"' >> /app/start.sh && \
+    echo 'if [ "${MITM_UI_ENABLED:-1}" != "0" ]; then ARGS="$ARGS --web-port ${MITM_WEB_PORT} --set web_host=0.0.0.0"; fi' >> /app/start.sh && \
+    echo 'if [ -z "${STREAM_LARGE_BODIES:-}" ]; then STREAM_LARGE_BODIES=1m; fi' >> /app/start.sh && \
+    echo 'if [ -n "${STREAM_LARGE_BODIES:-}" ]; then ARGS="$ARGS --set stream_large_bodies=${STREAM_LARGE_BODIES}"; fi' >> /app/start.sh && \
+    echo 'if [ -n "${BODY_SIZE_LIMIT:-}" ]; then ARGS="$ARGS --set body_size_limit=${BODY_SIZE_LIMIT}"; fi' >> /app/start.sh && \
     echo 'if [ -n "${MITM_WEB_PASSWORD:-}" ]; then ARGS="$ARGS --set web_password=${MITM_WEB_PASSWORD}"; fi' >> /app/start.sh && \
+    echo 'touch "${FLOW_FILE}" "${WEB_FILE}"' >> /app/start.sh && \
     echo 'if [ "${STREAM_TO_STDOUT:-0}" = "1" ]; then' >> /app/start.sh && \
-    echo '  mitmweb $ARGS >> "${WEB_FILE}" 2>&1 & MWPID=$!' >> /app/start.sh && \
+    echo '  $CMD $ARGS >> "${WEB_FILE}" 2>&1 & MWPID=$!' >> /app/start.sh && \
     echo '  tail -F "${WEB_FILE}" "${FLOW_FILE}" & TAILPID=$!' >> /app/start.sh && \
     echo '  trap "kill $MWPID $TAILPID 2>/dev/null || true" TERM INT' >> /app/start.sh && \
     echo '  wait $MWPID' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
-    echo '  exec sh -lc "mitmweb $ARGS >> \\"${WEB_FILE}\\" 2>&1"' >> /app/start.sh && \
+    echo '  exec sh -lc "$CMD $ARGS >> \\"${WEB_FILE}\\" 2>&1"' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     chmod +x /app/start.sh
 

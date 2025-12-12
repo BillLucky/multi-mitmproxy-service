@@ -215,6 +215,8 @@ make dockerhub-push  DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=1.0.0
 - 环境变量扩展：通过 `env` 字段注入，例如启用 `SSLKEYLOGFILE` 或调整 `PIP_INDEX_URL`、`HTTP_PROXY` 等。
 - 标准输出日志：设置 `STREAM_TO_STDOUT=1` 后，容器会把 `web_log` 与 `flow_log` 同步到 stdout；查看 `make logs` 或 `docker compose logs -f`
 - 日志滚动：默认每次启动为日志文件添加时间戳后缀，避免覆盖历史（可通过 `ROLL_ON_START=0` 禁用，使用固定文件名）
+- 内存优化：设置 `STREAM_LARGE_BODIES=1m`（默认）让超过阈值的响应体直接流式传递不保留；可选 `BODY_SIZE_LIMIT=10m` 限制最大体积
+ - 纯录制模式：设置 `MITM_UI_ENABLED=0` 使用后端 `mitmdump` 无 UI 录制，降低内存占用；健康检查自动切换为代理端口连通性
 
 ## CI/CD（GitHub Actions）
 - 已提供工作流：`.github/workflows/docker.yml`
