@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 COMPOSE_FILES := -f docker-compose.yml -f docker-compose.generated.yml
 
-DOCKER_REPO ?= yourname/mitmproxy-service
+DOCKER_REPO ?= luckybill/multi-mitmproxy-service
 
 generate:
 	@python3 tools/gen_compose.py

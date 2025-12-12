@@ -3,21 +3,22 @@
     {
       "name": "11434",
       "target": "http://host.docker.internal:11434",
-      "host_proxy_port": 48084,
-      "host_web_port": 48085,
-      "web_password": "$argon2id$v=19$m=4096,t=3,p=1$UJkTjY9A73NJo7QdAeSJhQ$iqqkhTvomJhA/IO33n4P/a9BLS548QaxTj4mTbBEshE",
+      "host_proxy_port": 48080,
+      "host_web_port": 48081,
+      "web_password": "$argon2id$v=19$m=4096,t=3,p=1$NfdPti75CkDT5/gaaj3vbg$U9Mx9IT+Xl+3XwzhGuW2eUF6zkgLm2f5IwW/8b8RD5Y",
       "volumes": [
-        "./mitmproxy-conf:/root/.mitmproxy:ro"
+        "./mitmproxy-conf:/root/.mitmproxy:rw"
       ],
       "env": {
         "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt"
       }
     },
     {
-      "name": "11435",
-      "target": "http://host.docker.internal:11435",
-      "host_proxy_port": 48082,
-      "host_web_port": 48083
+      "name": "11434-2",
+      "target": "http://host.docker.internal:11434",
+      "host_proxy_port": 49080,
+      "host_web_port": 49081,
+      "web_password": "$argon2id$v=19$m=4096,t=3,p=1$NfdPti75CkDT5/gaaj3vbg$U9Mx9IT+Xl+3XwzhGuW2eUF6zkgLm2f5IwW/8b8RD5Y"
     }
   ]
 }

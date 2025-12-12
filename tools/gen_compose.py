@@ -21,6 +21,8 @@ def load_config():
     return {"proxies": proxies}
 
 def gen_service_block(p):
+    image_repo = os.environ.get("IMAGE_REPO", p.get("image_repo", ""))
+    image_tag = p.get("image_tag", "latest")
     name = str(p["name"]).strip()
     target = p["target"]
     hpp = int(p["host_proxy_port"])
@@ -30,7 +32,7 @@ def gen_service_block(p):
     flow_log = f"/app/logs/log_{hpp}.flow"
     web_log = f"/app/logs/mitmweb_{hpp}.log"
     vol_path = f"./mitmproxy-logs/{hpp}:/app/logs"
-    container_name = f"mitmproxy-reverse-{hpp}"
+    container_name = f"mitmproxy-reverse-to-{hpp}-web-{hwp}"
 
     env_lines = [
         f"      - MITM_REVERSE_TARGET={target}",
@@ -51,7 +53,10 @@ def gen_service_block(p):
 
     block = []
     block.append(f"  mitmproxy-{name}:")
-    block.append(f"    build: .")
+    if image_repo:
+        block.append(f"    image: {image_repo}:{image_tag}")
+    else:
+        block.append(f"    build: .")
     block.append(f"    container_name: {container_name}")
     block.append(f"    restart: always")
     block.append(f"    init: true")
@@ -73,7 +78,16 @@ def gen_service_block(p):
     block.append(f"        max-size: \"100m\"")
     block.append(f"        max-file: \"3\"")
     block.append(f"    healthcheck:")
-    block.append(f"      test: [\"CMD\", \"python3\", \"-c\", \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:48081/', timeout=2)\"]")
+    block.append(
+        "      test: [\"CMD\", \"python3\", \"-c\", "
+        "\"import sys,urllib.request,urllib.error; "
+        "import socket; "
+        "import time; "
+        "url='http://127.0.0.1:48081/'; "
+        "try:\\n  urllib.request.urlopen(url, timeout=2); sys.exit(0)\\n"
+        "except urllib.error.HTTPError:\\n  sys.exit(0)\\n"
+        "except Exception:\\n  sys.exit(1)\" ]"
+    )
     block.append(f"      interval: 10s")
     block.append(f"      timeout: 3s")
     block.append(f"      retries: 5")

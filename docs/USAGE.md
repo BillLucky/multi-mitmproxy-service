@@ -13,6 +13,10 @@ make restart     # 生成、重建并启动
 make ps          # 查看状态
 make logs        # 跟随日志
 make down        # 停止并删除
+
+# 使用发布镜像而非本地构建
+export IMAGE_REPO=luckybill/multi-mitmproxy-service
+make up
 ```
 
 ## 三、访问方式
@@ -30,6 +34,14 @@ make down        # 停止并删除
 - `mitmproxy-logs/<port>/`：各服务日志目录
  - `mitmproxy-conf/`：示例的证书与配置目录（需要你自行创建）
 
+## 配置优先级与来源
+- 真实启动的服务与端口以 `docker-compose.generated.yml` 为准
+- 基础 `docker-compose.yml` 不包含具体服务（`services: {}`）
+- `.env` 不参与服务端口配置；所有端口与目标地址以 `proxies.json` 为唯一真相源
+- 容器命名：`mitmproxy-reverse-<host_proxy_port>`
+- 容器命名：`mitmproxy-reverse-to-<host_proxy_port>-web-<host_web_port>`
+- 健康检查：对 Web 端口发起 HTTP 请求，403/405 不视为失败（表示 UI 需要认证，但服务可达）
+
 ## 五、构建与缓存
 - 构建使用 BuildKit 特性缓存 pip 包
 - 如 Docker Desktop 已启用 BuildKit，重复构建会显著加速
@@ -39,11 +51,13 @@ make down        # 停止并删除
 - 端口占用：`lsof -iTCP:<port> -sTCP:LISTEN -n -P`
 - 健康状态：`make ps`，等待 `(healthy)` 状态
 - UI 403：确认是否使用了 `/?token=<password>` 或 Authorization 头
+- 反向目标不可达：用宿主机验证 `curl -v http://host.docker.internal:<target_port>/`。若返回 `Empty reply` 或连接失败，请检查目标服务是否在宿主机监听。
 
 ## 七、挂载示例
 - 挂载证书与配置：
   - 在宿主创建 `mitmproxy-conf/`，将 CA 或配置文件置于其中
-  - 在 `proxies.json` 对应条目的 `volumes` 添加：`"./mitmproxy-conf:/root/.mitmproxy:ro"`
+  - 在 `proxies.json` 对应条目的 `volumes` 添加：`"./mitmproxy-conf:/root/.mitmproxy:rw"`
+  - 说明：mitmproxy 会写入 CA 与私钥文件到 `~/.mitmproxy`，因此建议 `rw`；如需 `ro`，必须预先完整放置所需文件。
 - 挂载脚本或资源文件：
   - `volumes`: `["./scripts/flow.py:/app/flow.py:ro"]`
   - 结合 `env`: `{"MITM_EXTRA_SCRIPT": "/app/flow.py"}`，并在 Dockerfile 或启动命令中消费该变量

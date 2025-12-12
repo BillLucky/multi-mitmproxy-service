@@ -16,6 +16,19 @@ make restart   # 变更后重建并启动
 make down      # 停止并删除容器
 ```
 
+### 使用已发布镜像（无需本地构建）
+```bash
+export IMAGE_REPO=luckybill/multi-mitmproxy-service
+make up
+```
+- 或直接运行：
+```bash
+docker run -p 8080:48080 -p 8081:48081 \
+  -e MITM_REVERSE_TARGET=http://host.docker.internal:11434 \
+  -e MITM_WEB_PASSWORD=5555.5555 \
+  luckybill/multi-mitmproxy-service:latest
+```
+
 访问：
 - 代理端口：见 `proxies.json` 的 `host_proxy_port`
 - Web UI：见 `proxies.json` 的 `host_web_port`
@@ -59,10 +72,17 @@ make up
 
 ## 设计说明
 - 生成器：`tools/gen_compose.py` 读取 `proxies.json`，生成 `docker-compose.generated.yml`
-- Compose：基础文件 `docker-compose.yml` 仅包含通用锚点与空 `services`，具体服务放在生成文件
+- Compose：基础文件 `docker-compose.yml` 仅包含通用锚点与空 `services`，具体服务全部来自生成文件
 - 容器端口：所有容器内部统一使用 `48080/48081`，宿主映射端口由 `proxies.json` 决定
 - 健康检查：每个容器对 `127.0.0.1:<web_port>` 进行 HTTP 检查，保证 UI 可达
 - 日志：`driver=local`，`max-size=100m`，`max-file=3`，各服务单独目录
+
+### 配置生效关系（优先级）
+- 实际启动的服务与端口以 `docker-compose.generated.yml` 为准
+- `docker-compose.yml` 的 `services: {}` 不启动任何服务，仅提供通用配置
+- `.env` 文件不再参与服务端口配置（可用于你自定义环境，不影响生成器输出）
+- 容器命名规则：`mitmproxy-reverse-to-<host_proxy_port>-web-<host_web_port>`
+- Web UI 端口：`<host_web_port>`；代理端口：`<host_proxy_port>`
 
 ## Web UI 密码
 - 明文：`"web_password": "yourpass"`
@@ -92,8 +112,8 @@ make hash PASSWORD=yourpass   # 生成 Argon2 哈希
 
 # 推送到 Docker Hub
 make dockerhub-login
-make dockerhub-build DOCKER_REPO=yourname/mitmproxy-service VERSION=1.0.0
-make dockerhub-push  DOCKER_REPO=yourname/mitmproxy-service VERSION=1.0.0
+make dockerhub-build DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=1.0.0
+make dockerhub-push  DOCKER_REPO=luckybill/multi-mitmproxy-service VERSION=1.0.0
 ```
 
 ## 约束与提示
@@ -112,7 +132,7 @@ make dockerhub-push  DOCKER_REPO=yourname/mitmproxy-service VERSION=1.0.0
 - 需要在仓库设置 Secrets：
   - `DOCKERHUB_USERNAME`：你的 Docker Hub 用户名
   - `DOCKERHUB_TOKEN`：你的 Docker Hub Access Token
-  - `DOCKER_REPO`：`yourname/mitmproxy-service`
+  - `DOCKER_REPO`：`luckybill/multi-mitmproxy-service`
 - 触发策略：
   - 对 `main/master` 推送：构建并推送 `latest`
   - 打标签 `vX.Y.Z`：构建并推送 `X.Y.Z` 版本标签
