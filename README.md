@@ -79,6 +79,23 @@ docker run -p 8080:48080 -p 8081:48081 \
 make up
 ```
 
+### 高级示例（一次性定义多个端口）
+```json
+{
+  "proxies": [
+    { "name": "ollama", "target": "http://host.docker.internal:11434", "host_proxy_port": 48084, "host_web_port": 48085 },
+    { "name": "apiA",   "target": "http://host.docker.internal:9000",   "host_proxy_port": 49080, "host_web_port": 49081,
+      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt" },
+      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:rw"] }
+  ]
+}
+```
+```bash
+make up
+open http://localhost:48085/?token=<password>
+open http://localhost:49081/?token=<password>
+```
+
 ## 设计说明
 - 生成器：`tools/gen_compose.py` 读取 `proxies.json`，生成 `docker-compose.generated.yml`
 - Compose：基础文件 `docker-compose.yml` 仅包含通用锚点与空 `services`，具体服务全部来自生成文件
@@ -104,6 +121,28 @@ make up
 - 示例：为 Ollama `11434` 启服务，宿主代理端口设为 `48084`，Web 端口 `48085`：
   - `proxies.json` 设置 `target=http://host.docker.internal:11434`，`host_proxy_port=48084`，`host_web_port=48085`
   - `make up` 后访问 `http://localhost:48084/` 与 `http://localhost:48085/?token=<密码>`，即可观察请求与响应
+
+## Bilingual Overview（English）
+- What: A configurable multi-port reverse proxy suite built on mitmproxy/mitmweb.
+- Why: Give API/AI/backend developers a “port observatory” to visualize requests/responses while iterating prompts and parameters.
+- How:
+  - Define multiple targets in `proxies.json`, auto-generate services with isolated proxy/UI/log directories.
+  - Web UI visualizes headers, bodies, and timelines. Mount logs/certs to persist context. Optional `SSLKEYLOGFILE` for TLS decryption (Wireshark).
+- Quick Start:
+```bash
+docker run -p 8080:48080 -p 8081:48081 \
+  -e MITM_REVERSE_TARGET=http://host.docker.internal:11434 \
+  -e MITM_WEB_PASSWORD=yourpass \
+  luckybill/multi-mitmproxy-service:latest
+```
+- Multiple Services:
+```bash
+export IMAGE_REPO=luckybill/multi-mitmproxy-service
+make up
+```
+- Links:
+  - Hub: https://hub.docker.com/r/luckybill/multi-mitmproxy-service
+  - Repo: https://github.com/BillLucky/multi-mitmproxy-service
 
 ## Web UI 密码
 - 明文：`"web_password": "yourpass"`

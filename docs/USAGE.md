@@ -23,6 +23,21 @@ docker run -p 8080:48080 -p 8081:48081 \
   -e MITM_REVERSE_TARGET=http://host.docker.internal:11434 \
   -e MITM_WEB_PASSWORD=5555.5555 \
   luckybill/multi-mitmproxy-service:latest
+
+# 典型示例：两个服务
+cat > proxies.json <<'JSON'
+{
+  "proxies": [
+    { "name": "ollama", "target": "http://host.docker.internal:11434", "host_proxy_port": 48084, "host_web_port": 48085 },
+    { "name": "apiA",   "target": "http://host.docker.internal:9000",   "host_proxy_port": 49080, "host_web_port": 49081,
+      "env": { "SSLKEYLOGFILE": "/app/logs/sslkeylog.txt" },
+      "volumes": ["./mitmproxy-conf:/root/.mitmproxy:rw"] }
+  ]
+}
+JSON
+make up
+open http://localhost:48085/?token=<password>
+open http://localhost:49081/?token=<password>
 ```
 
 ## 三、访问方式
@@ -51,6 +66,23 @@ docker run -p 8080:48080 -p 8081:48081 \
 ## 链接与指引
 - Docker Hub：`https://hub.docker.com/r/luckybill/multi-mitmproxy-service`
 - GitHub Repo：`https://github.com/BillLucky/multi-mitmproxy-service`
+
+## Bilingual Overview（English）
+- Quick Start:
+```bash
+docker run -p 8080:48080 -p 8081:48081 \
+  -e MITM_REVERSE_TARGET=http://host.docker.internal:11434 \
+  -e MITM_WEB_PASSWORD=yourpass \
+  luckybill/multi-mitmproxy-service:latest
+```
+- Multiple services:
+```bash
+export IMAGE_REPO=luckybill/multi-mitmproxy-service
+make up
+```
+- Links:
+  - Hub: https://hub.docker.com/r/luckybill/multi-mitmproxy-service
+  - Repo: https://github.com/BillLucky/multi-mitmproxy-service
 
 ## 五、构建与缓存
 - 构建使用 BuildKit 特性缓存 pip 包
